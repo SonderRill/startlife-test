@@ -48,7 +48,7 @@ pnpm install
 cp .env.example .env
 # Отредактируйте .env: DATABASE_URL, JWT_SECRET
 
-# 3. Запуск инфраструктуры (PostgreSQL)
+# 3. Запуск инфраструктуры
 docker compose up -d db
 
 # 4. Миграции базы данных
@@ -60,6 +60,36 @@ pnpm start:dev
 
 Приложение: **http://localhost:7000**  
 Swagger UI: **http://localhost:7000/api/docs**
+
+### Docker Compose — инфраструктура
+
+| Сервис | Порт | Описание |
+|--------|------|----------|
+| **db** | 5444→5432 | PostgreSQL 16 (user: myuser, password: mypassword, db: mydatabase) |
+| **prometheus** | 9090 | Метрики |
+| **grafana** | 3000 | Дашборды (Loki + Prometheus) — http://localhost:3000 |
+| **loki** | 3100 | Логи |
+
+**Команды:**
+
+```bash
+# Только база данных (для локальной разработки)
+docker compose up -d db
+
+# Вся инфраструктура (db + мониторинг)
+docker compose up -d prometheus grafana loki
+
+# Логи
+docker compose logs -f db
+
+# Остановка
+docker compose down
+
+# Остановка с удалением volumes
+docker compose down -v
+```
+
+**DATABASE_URL:** `postgresql://myuser:mypassword@127.0.0.1:5444/mydatabase?schema=public`
 
 ---
 

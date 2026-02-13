@@ -43,9 +43,9 @@ export async function bootstrap() {
   )
 
   /**
-   * API prefix for mobile app
+   * API prefix for mobile app (metrics исключён — Prometheus/Grafana ожидают /metrics)
    */
-  app.setGlobalPrefix('api/v1')
+  app.setGlobalPrefix('api/v1', { exclude: ['metrics'] })
 
   /**
    * Nestia Swagger

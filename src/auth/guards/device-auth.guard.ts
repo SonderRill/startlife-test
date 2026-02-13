@@ -5,6 +5,8 @@ import { AuthGuard } from '@nestjs/passport'
 import { JWT_STRATEGY_NAME } from '../constants'
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator'
 
+const PUBLIC_PATHS = ['/metrics', '/api/docs', '/api/docs-json', '/api-json']
+
 /**
  * JWT Auth Guard — валидирует Bearer Token
  */
@@ -18,6 +20,14 @@ export class DeviceAuthGuard
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest()
+    const path =
+      request.url?.split('?')[0] ?? request.raw?.url?.split('?')[0] ?? ''
+
+    if (PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + '/'))) {
+      return true
+    }
+
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),

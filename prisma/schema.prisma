@@ -1,0 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Typia for prisma https://typia.io/docs/utilization/prisma/
+
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  deviceId  String   @unique
+  platform  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userJourneys         UserJourney[]
+  userJourneyProgress  UserJourneyProgress[]
+  onboardingAnswers    OnboardingAnswer[]
+  userLessonProgress   UserLessonProgress[]
+}
+
+model Journey {
+  id         String   @id @default(uuid())
+  slug       String   @unique
+  title      String
+  lengthDays Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userJourneys        UserJourney[]
+  userJourneyProgress UserJourneyProgress[]
+  onboardingFlow      OnboardingFlow?
+  levels              Level[]
+}
+
+model UserJourney {
+  id              String   @id @default(uuid())
+  userId          String
+  journeyId       String
+  premiumUnlocked Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  journey Journey @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, journeyId])
+}
+
+model UserJourneyProgress {
+  id                   String   @id @default(uuid())
+  userId               String
+  journeyId            String
+  currentLevelNumber    Int      @default(1)
+  currentLessonDayNumber Int     @default(1)
+  updatedAt            DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  journey Journey @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, journeyId])
+}
+
+model OnboardingFlow {
+  id      String   @id @default(uuid())
+  key     String
+  version Int      @default(1)
+  journeyId String? @unique
+  createdAt DateTime @default(now())
+
+  journey          Journey?         @relation(fields: [journeyId], references: [id], onDelete: SetNull)
+  onboardingSteps  OnboardingStep[]
+  onboardingAnswers OnboardingAnswer[]
+}
+
+model OnboardingStep {
+  id            String   @id @default(uuid())
+  flowId        String
+  order         Int
+  answerOptions Json?
+  createdAt     DateTime @default(now())
+
+  flow OnboardingFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+}
+
+model OnboardingAnswer {
+  id        String   @id @default(uuid())
+  userId    String
+  flowId    String
+  answers   Json
+  createdAt DateTime @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flow OnboardingFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, flowId])
+}
+
+model Level {
+  id        String   @id @default(uuid())
+  journeyId String
+  number    Int
+  createdAt DateTime @default(now())
+
+  journey Journey @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+}
+
+model Lesson {
+  id        String   @id @default(uuid())
+  levelId   String
+  dayNumber Int
+  slug      String
+  content   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  level               Level               @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  userLessonProgress  UserLessonProgress[]
+}
+
+enum LessonProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model UserLessonProgress {
+  id            String              @id @default(uuid())
+  userId        String
+  lessonId      String
+  status        LessonProgressStatus @default(NOT_STARTED)
+  quizCompleted Boolean             @default(false)
+  quizAnswers   Json?
+  reflections   Json?
+  rating        Int?
+  updatedAt     DateTime            @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+}
